@@ -1,0 +1,41 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Article – {{ article.titre }}{% endblock %}
+
+{% block body %}
+    <h1>{{ article.titre }}</h1>
+
+    <p>{{ article.contenu }}</p>
+    <p>
+        <small>
+            Publié le {{ article.createdAt ? article.createdAt|date('d/m/Y \\à H:i') : '' }}
+            {% if article.updatedAt %}, mis à jour le {{ article.updatedAt|date('d/m/Y \\à H:i') }}{% endif %}
+        </small>
+    </p>
+
+    <hr>
+    <h2>Commentaires ({{ commentaires|length }})</h2>
+    <ul>
+        {% for c in commentaires %}
+            <li class="mb-3">
+                <strong>{{ c.utilisateur.email }}</strong>
+                <em>le {{ c.createdAt|date('d/m/Y \\à H:i') }}</em>
+                <p>{{ c.contenu }}</p>
+            </li>
+        {% else %}
+            <li>Aucun commentaire pour l’instant. Soyez le premier à en laisser un !</li>
+        {% endfor %}
+    </ul>
+
+    <hr>
+    <h3>Ajouter un commentaire</h3>
+    {{ form_start(formComment) }}
+        {{ form_row(formComment.contenu) }}
+        <button class="btn btn-primary">Envoyer</button>
+    {{ form_end(formComment) }}
+
+    <hr>
+    <a href="{{ path('app_article_index') }}" class="btn btn-secondary">Retour à la liste</a>
+    <a href="{{ path('app_article_edit', {'id': article.id}) }}" class="btn btn-warning">Modifier</a>
+    {{ include('article/_delete_form.html.twig') }}
+{% endblock %}
