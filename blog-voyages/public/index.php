@@ -1,6 +1,9 @@
 <?php
 
 
+// On ne veut pas voir les E_DEPRECATED et E_USER_DEPRECATED
+error_reporting(E_ALL & ~E_DEPRECATED & ~E_USER_DEPRECATED);
+
 use App\Kernel;
 
 require_once dirname(__DIR__).'/vendor/autoload_runtime.php';
