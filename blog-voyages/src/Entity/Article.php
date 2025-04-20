@@ -7,6 +7,37 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
+use Symfony\Component\Serializer\Annotation\Groups;
+
+#[ApiResource(
+    normalizationContext: ['groups' => ['article:read']],
+    denormalizationContext: ['groups' => ['article:write']]
+)]
+#[GetCollection()]  // GET  /api/articles
+#[Post(
+    security: "is_granted('ROLE_USER')",
+    securityMessage: "Vous devez être connecté pour créer un article."
+)]               // POST /api/articles
+#[Get]          // GET  /api/articles/{id}
+#[Put(
+    security: "is_granted('ROLE_ADMIN') or object.getAuteur() == user",
+    securityMessage: "Vous ne pouvez pas modifier cet article."
+)]               // PUT /api/articles/{id}
+#[Patch(
+    security: "is_granted('ROLE_ADMIN') or object.getAuteur() == user",
+    securityMessage: "Vous ne pouvez pas modifier cet article."
+)]               // PATCH /api/articles/{id}
+#[Delete(
+    security: "is_granted('ROLE_ADMIN') or object.getAuteur() == user",
+    securityMessage: "Vous ne pouvez pas supprimer cet article."
+)]               // DELETE /api/articles/{id}
 
 #[ORM\Entity(repositoryClass: ArticleRepository::class)]
 class Article

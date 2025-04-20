@@ -8,6 +8,7 @@ use App\Form\ArticleType;
 use App\Form\CommentaireType;
 use App\Repository\ArticleRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -25,9 +26,11 @@ class ArticleController extends AbstractController
     }
 
     #[Route('/new', name: 'app_article_new', methods: ['GET', 'POST'])]
+    #[IsGranted('ROLE_USER')]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $article = new Article();
+        $article->setAuteur($this->getUser());
         $form = $this->createForm(ArticleType::class, $article);
         $form->handleRequest($request);
 
@@ -44,35 +47,40 @@ class ArticleController extends AbstractController
         ]);
     }
 
-    #[Route('/{id}', name: 'app_article_show', methods: ['GET'])]
+    #[Route('/{id}', name: 'app_article_show', methods: ['GET','POST'])]
     public function show(
         Article $article,
         Request $request,
         EntityManagerInterface $em
     ): Response {
-        // 1) On instancie l'entité et le formulaire
         $commentaire = new Commentaire();
         $form = $this->createForm(CommentaireType::class, $commentaire);
         $form->handleRequest($request);
     
-        // 2) On traite la soumission
-        if ($form->isSubmitted() && $form->isValid()) {
-            $commentaire->setUtilisateur($this->getUser());
-            $commentaire->setArticle($article);
-            $commentaire->setCreatedAt(new \DateTimeImmutable());
-            $em->persist($commentaire);
-            $em->flush();
+        // Si le formulaire est soumis, on exige un utilisateur connecté
+        if ($form->isSubmitted()) {
+            // Si pas d'utilisateur, on bloque
+            if (! $this->getUser()) {
+                throw $this->createAccessDeniedException('Vous devez être connecté pour commenter.');
+            }
     
-            // Pour éviter un repost du formulaire au rafraîchissement
-            return $this->redirectToRoute('app_article_show', [
-                'id' => $article->getId(),
-            ]);
+            // Puis on vérifie la validité
+            if ($form->isValid()) {
+                $commentaire->setUtilisateur($this->getUser());
+                $commentaire->setArticle($article);
+                $commentaire->setCreatedAt(new \DateTimeImmutable());
+                $em->persist($commentaire);
+                $em->flush();
+    
+                return $this->redirectToRoute('app_article_show', [
+                    'id' => $article->getId(),
+                ]);
+            }
         }
     
-        // 3) On envoie l'article, ses commentaires et le formulaire à Twig
         return $this->render('article/show.html.twig', [
             'article'      => $article,
-            'commentaires' => $article->getCommentaires(), // si relation bidirectionnelle
+            'commentaires' => $article->getCommentaires(),
             'formComment'  => $form->createView(),
         ]);
     }
