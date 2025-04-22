@@ -3,6 +3,7 @@
 namespace App\Repository;
 
 use App\Entity\Article;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -21,28 +22,44 @@ class ArticleRepository extends ServiceEntityRepository
         parent::__construct($registry, Article::class);
     }
 
-//    /**
-//     * @return Article[] Returns an array of Article objects
-//     */
-//    public function findByExampleField($value): array
-//    {
-//        return $this->createQueryBuilder('a')
-//            ->andWhere('a.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->orderBy('a.id', 'ASC')
-//            ->setMaxResults(10)
-//            ->getQuery()
-//            ->getResult()
-//        ;
-//    }
+    /**
+     * Recherche les articles selon un titre partiel et/ou un auteur donné.
+     *
+     * @param string|null $title
+     * @param User|null   $author
+     *
+     * @return Article[]
+     */
+    public function findByFilters(?string $title, ?User $author): array
+    {
+        $qb = $this->createQueryBuilder('a')
+            ->orderBy('a.createdAt', 'DESC');
 
-//    public function findOneBySomeField($value): ?Article
-//    {
-//        return $this->createQueryBuilder('a')
-//            ->andWhere('a.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+        if ($title) {
+            $qb->andWhere('a.titre LIKE :title')
+               ->setParameter('title', '%'.$title.'%');
+        }
+
+        if ($author) {
+            $qb->andWhere('a.auteur = :author')
+               ->setParameter('author', $author);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Récupère la liste des auteurs ayant au moins un article.
+     *
+     * @return User[]
+     */
+    public function findAuthors(): array
+    {
+        return $this->createQueryBuilder('a')
+            ->join('a.auteur', 'u')          // on joint la relation ManyToOne
+            ->select('DISTINCT u')           // on sélectionne les auteurs distincts
+            ->orderBy('u.email', 'ASC')      // optionnel : tri par email
+            ->getQuery()
+            ->getResult();
+    }
 }

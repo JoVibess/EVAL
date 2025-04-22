@@ -2,9 +2,28 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\Delete;
+use Symfony\Component\Serializer\Annotation\Groups;
 use App\Repository\CommentaireRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+
+#[ApiResource(
+    normalizationContext: ['groups' => ['commentaire:read']],
+    denormalizationContext: ['groups' => ['commentaire:write']],
+  )]
+  #[GetCollection]
+  #[Post(security: "is_granted('ROLE_USER')")]
+  #[Get]
+  #[Delete(
+      security: "object.getUtilisateur() == user or is_granted('ROLE_ADMIN')",
+      securityMessage: "Vous ne pouvez pas supprimer ce commentaire."
+  )]
+
 
 #[ORM\Entity(repositoryClass: CommentaireRepository::class)]
 class Commentaire

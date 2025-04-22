@@ -1,0 +1,24 @@
+<form method="get" class="row g-2">
+  <div class="col-md-5">
+    <input
+      type="text"
+      name="title"
+      class="form-control"
+      placeholder="Rechercher un titre…"
+      value="{{ search_title }}"
+    >
+  </div>
+  <div class="col-md-5">
+    <select name="author" class="form-select">
+      <option value="">Tous les auteurs</option>
+      {% for user in authors %}
+        <option value="{{ user.id }}"
+          {% if search_author == user.id %}selected{% endif %}
+        >{{ user.email }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2 text-end">
+    <button class="btn btn-primary w-100">Filtrer</button>
+  </div>
+</form>
