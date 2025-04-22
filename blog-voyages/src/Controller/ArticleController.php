@@ -24,15 +24,12 @@ class ArticleController extends AbstractController
         ArticleRepository $articleRepository,
         UserRepository $userRepository
     ): Response {
-        $title    = $request->query->get('title', null);
-        $authorId = $request->query->get('author', null);
+        $title    = $request->query->get('title');
+        $authorId = $request->query->get('author');
         $author   = $authorId ? $userRepository->find($authorId) : null;
 
         $articles = $articleRepository->findByFilters($title, $author);
-
-        // ← Ici, on remplace la récupération de tous les users
-        //     et le filtrage par ROLE_USER par un appel direct :
-        $authors = $userRepository->findAuthors();
+        $authors  = $userRepository->findAuthors();
 
         return $this->render('article/index.html.twig', [
             'articles'      => $articles,
@@ -44,23 +41,24 @@ class ArticleController extends AbstractController
 
     #[Route('/new', name: 'app_article_new', methods: ['GET', 'POST'])]
     #[IsGranted('ROLE_USER')]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    public function new(Request $request, EntityManagerInterface $em): Response
     {
         $article = new Article();
         $article->setAuteur($this->getUser());
+
         $form = $this->createForm(ArticleType::class, $article);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->persist($article);
-            $entityManager->flush();
+            $em->persist($article);
+            $em->flush();
 
-            return $this->redirectToRoute('app_article_index', [], Response::HTTP_SEE_OTHER);
+            return $this->redirectToRoute('app_article_index');
         }
 
         return $this->renderForm('article/new.html.twig', [
             'article' => $article,
-            'form' => $form,
+            'form'    => $form,
         ]);
     }
 
@@ -70,31 +68,26 @@ class ArticleController extends AbstractController
         Request $request,
         EntityManagerInterface $em
     ): Response {
+        // gestion des commentaires en POST sur /article/{id}
         $commentaire = new Commentaire();
         $form = $this->createForm(CommentaireType::class, $commentaire);
         $form->handleRequest($request);
-    
-        // Si le formulaire est soumis, on exige un utilisateur connecté
+
         if ($form->isSubmitted()) {
-            // Si pas d'utilisateur, on bloque
             if (! $this->getUser()) {
                 throw $this->createAccessDeniedException('Vous devez être connecté pour commenter.');
             }
-    
-            // Puis on vérifie la validité
             if ($form->isValid()) {
                 $commentaire->setUtilisateur($this->getUser());
                 $commentaire->setArticle($article);
                 $commentaire->setCreatedAt(new \DateTimeImmutable());
                 $em->persist($commentaire);
                 $em->flush();
-    
-                return $this->redirectToRoute('app_article_show', [
-                    'id' => $article->getId(),
-                ]);
+
+                return $this->redirectToRoute('app_article_show', ['id' => $article->getId()]);
             }
         }
-    
+
         return $this->render('article/show.html.twig', [
             'article'      => $article,
             'commentaires' => $article->getCommentaires(),
@@ -103,9 +96,8 @@ class ArticleController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_article_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Article $article, EntityManagerInterface $entityManager): Response
+    public function edit(Request $request, Article $article, EntityManagerInterface $em): Response
     {
-        // Ne laisser passer que l'auteur ou un admin
         if ($this->getUser() !== $article->getAuteur() && ! $this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('Vous ne pouvez pas modifier cet article.');
         }
@@ -114,30 +106,30 @@ class ArticleController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $entityManager->flush();
-
-            return $this->redirectToRoute('app_article_index', [], Response::HTTP_SEE_OTHER);
+            $em->flush();
+            return $this->redirectToRoute('app_article_index');
         }
 
         return $this->renderForm('article/edit.html.twig', [
             'article' => $article,
-            'form' => $form,
+            'form'    => $form,
         ]);
     }
 
-    #[Route('/{id}', name: 'app_article_delete', methods: ['POST'])]
-    public function delete(Request $request, Article $article, EntityManagerInterface $entityManager): Response
+    // ← CHANGEMENT : on passe en /{id}/delete
+    #[Route('/{id}/delete', name: 'app_article_delete', methods: ['POST'])]
+    public function delete(Request $request, Article $article, EntityManagerInterface $em): Response
     {
-        // Même vérification côté suppression
         if ($this->getUser() !== $article->getAuteur() && ! $this->isGranted('ROLE_ADMIN')) {
             throw $this->createAccessDeniedException('Vous ne pouvez pas supprimer cet article.');
         }
 
-        if ($this->isCsrfTokenValid('delete'.$article->getId(), $request->request->get('_token'))) {
-            $entityManager->remove($article);
-            $entityManager->flush();
+        if ($this->isCsrfTokenValid('delete' . $article->getId(), $request->request->get('_token'))) {
+            $em->remove($article);
+            $em->flush();
+            $this->addFlash('success', 'Article supprimé.');
         }
 
-        return $this->redirectToRoute('app_article_index', [], Response::HTTP_SEE_OTHER);
+        return $this->redirectToRoute('app_article_index');
     }
 }

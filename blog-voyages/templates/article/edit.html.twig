@@ -13,19 +13,19 @@
   {{ form_end(form) }}
 
   {# → Bouton Supprimer, visible à l’auteur ou à l’admin seulement #}
-  {% if app.user and (article.auteur == app.user or is_granted('ROLE_ADMIN')) %}
-    <hr>
-    <form
-      action="{{ path('app_article_delete', {id: article.id}) }}"
-      method="post"
-      onsubmit="return confirm('Êtes‑vous sûr de vouloir supprimer cet article ?');"
+ {% if app.user and (article.auteur == app.user or is_granted('ROLE_ADMIN')) %}
+  <hr>
+  <form
+    method="post"
+    action="{{ path('app_article_delete', { id: article.id }) }}"
+    onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cet article ?');"
+  >
+    <input
+      type="hidden"
+      name="_token"
+      value="{{ csrf_token('delete' ~ article.id) }}"
     >
-      <input
-        type="hidden"
-        name="_token"
-        value="{{ csrf_token('delete' ~ article.id) }}"
-      >
-      <button class="btn btn-danger">Supprimer cet article</button>
-    </form>
+    <button type="submit" class="btn btn-danger">Supprimer cet article</button>
+  </form>
   {% endif %}
 {% endblock %}
