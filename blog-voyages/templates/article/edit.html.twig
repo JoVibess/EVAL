@@ -1,13 +1,31 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Edit Article{% endblock %}
+{% block title %}Modifier un article – Blog Voyages{% endblock %}
 
 {% block body %}
-    <h1>Edit Article</h1>
+  <h1>Modifier un article</h1>
 
-    {{ include('article/_form.html.twig', {'button_label': 'Update'}) }}
+  {{ form_start(form) }}
+    {{ form_row(form.titre) }}
+    {{ form_row(form.contenu) }}
+    <button class="btn btn-success">Mettre à jour</button>
+    <a href="{{ path('app_article_index') }}" class="btn btn-secondary">Annuler</a>
+  {{ form_end(form) }}
 
-    <a href="{{ path('app_article_index') }}">back to list</a>
-
-    {{ include('article/_delete_form.html.twig') }}
+  {# → Bouton Supprimer, visible à l’auteur ou à l’admin seulement #}
+  {% if app.user and (article.auteur == app.user or is_granted('ROLE_ADMIN')) %}
+    <hr>
+    <form
+      action="{{ path('app_article_delete', {id: article.id}) }}"
+      method="post"
+      onsubmit="return confirm('Êtes‑vous sûr de vouloir supprimer cet article ?');"
+    >
+      <input
+        type="hidden"
+        name="_token"
+        value="{{ csrf_token('delete' ~ article.id) }}"
+      >
+      <button class="btn btn-danger">Supprimer cet article</button>
+    </form>
+  {% endif %}
 {% endblock %}

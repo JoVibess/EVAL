@@ -1,41 +1,68 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Article – {{ article.titre }}{% endblock %}
+{% block title %}{{ article.titre }} – Blog Voyages{% endblock %}
 
 {% block body %}
-    <h1>{{ article.titre }}</h1>
+  <div class="card mb-4">
+    <div class="card-body">
+      <h2 class="card-title">{{ article.titre }}</h2>
+      <p class="card-text">{{ article.contenu|nl2br }}</p>
+      <p class="text-muted small">
+        Publié le {{ article.createdAt|date('d/m/Y \\à H:i') }}
+        {% if article.updatedAt %}, mis à jour le {{ article.updatedAt|date('d/m/Y \\à H:i') }}{% endif %}
+      </p>
+      <p>Auteur : {{ article.auteur.email }}</p>
+      <div class="mt-3">
+        <a href="{{ path('app_article_index') }}" class="btn btn-secondary">← Retour</a>
+        {% if app.user and (article.auteur == app.user or is_granted('ROLE_ADMIN')) %}
+          <a href="{{ path('app_article_edit', {id: article.id}) }}" class="btn btn-warning">Modifier</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 
-    <p>{{ article.contenu }}</p>
-    <p>
-        <small>
-            Publié le {{ article.createdAt ? article.createdAt|date('d/m/Y \\à H:i') : '' }}
-            {% if article.updatedAt %}, mis à jour le {{ article.updatedAt|date('d/m/Y \\à H:i') }}{% endif %}
+  <h3>Commentaires</h3>
+  <div class="list-group mb-4">
+    {% for c in commentaires %}
+      <div class="list-group-item">
+        <p>{{ c.contenu|nl2br }}</p>
+        <small class="text-muted">
+          Par {{ c.utilisateur.email }} le {{ c.createdAt|date('d/m/Y \\à H:i') }}
         </small>
+        {% if app.user and (c.utilisateur == app.user or is_granted('ROLE_ADMIN')) %}
+          <form
+            action="{{ path('app_commentaire_delete', {id: c.id}) }}"
+            method="post"
+            class="d-inline float-end"
+            onsubmit="return confirm('Confirmez la suppression ?')"
+          >
+            <input
+              type="hidden"
+              name="_token"
+              value="{{ csrf_token('delete_comment_' ~ c.id) }}"
+            >
+            <button class="btn btn-sm btn-danger">Supprimer</button>
+          </form>
+        {% endif %}
+      </div>
+    {% else %}
+      <p class="text-muted">Aucun commentaire pour l’instant.</p>
+    {% endfor %}
+  </div>
+
+  {% if app.user %}
+    <div class="card">
+      <div class="card-body">
+        <h4>Ajouter un commentaire</h4>
+        {{ form_start(formComment) }}
+          {{ form_row(formComment.contenu) }}
+          <button class="btn btn-primary">Envoyer</button>
+        {{ form_end(formComment) }}
+      </div>
+    </div>
+  {% else %}
+    <p class="text-center">
+      <a href="{{ path('app_login') }}" class="btn btn-outline-primary">Connectez-vous pour commenter</a>
     </p>
-
-    <hr>
-    <h2>Commentaires ({{ commentaires|length }})</h2>
-    <ul>
-        {% for c in commentaires %}
-            <li class="mb-3">
-                <strong>{{ c.utilisateur.email }}</strong>
-                <em>le {{ c.createdAt|date('d/m/Y \\à H:i') }}</em>
-                <p>{{ c.contenu }}</p>
-            </li>
-        {% else %}
-            <li>Aucun commentaire pour l’instant. Soyez le premier à en laisser un !</li>
-        {% endfor %}
-    </ul>
-
-    <hr>
-    <h3>Ajouter un commentaire</h3>
-    {{ form_start(formComment) }}
-        {{ form_row(formComment.contenu) }}
-        <button class="btn btn-primary">Envoyer</button>
-    {{ form_end(formComment) }}
-
-    <hr>
-    <a href="{{ path('app_article_index') }}" class="btn btn-secondary">Retour à la liste</a>
-    <a href="{{ path('app_article_edit', {'id': article.id}) }}" class="btn btn-warning">Modifier</a>
-    {{ include('article/_delete_form.html.twig') }}
+  {% endif %}
 {% endblock %}

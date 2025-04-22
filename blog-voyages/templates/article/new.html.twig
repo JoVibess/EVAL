@@ -1,11 +1,15 @@
 {% extends 'base.html.twig' %}
-
-{% block title %}New Article{% endblock %}
-
+{% block title %}
+  {{ form.vars.value.id ? 'Modifier' : 'Créer' }} un article – Blog Voyages
+{% endblock %}
 {% block body %}
-    <h1>Create new Article</h1>
-
-    {{ include('article/_form.html.twig') }}
-
-    <a href="{{ path('app_article_index') }}">back to list</a>
+  <h1>{{ form.vars.value.id ? 'Modifier' : 'Créer' }} un article</h1>
+  {{ form_start(form) }}
+    {{ form_row(form.titre) }}
+    {{ form_row(form.contenu) }}
+    <button class="btn btn-success">
+      {{ form.vars.value.id ? 'Mettre à jour' : 'Ajouter' }}
+    </button>
+    <a href="{{ path('app_article_index') }}" class="btn btn-secondary">Annuler</a>
+  {{ form_end(form) }}
 {% endblock %}

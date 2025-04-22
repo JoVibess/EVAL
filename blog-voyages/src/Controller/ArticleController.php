@@ -7,6 +7,7 @@ use App\Entity\Commentaire;
 use App\Form\ArticleType;
 use App\Form\CommentaireType;
 use App\Repository\ArticleRepository;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\IsGranted;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -18,10 +19,26 @@ use Symfony\Component\Routing\Annotation\Route;
 class ArticleController extends AbstractController
 {
     #[Route('/', name: 'app_article_index', methods: ['GET'])]
-    public function index(ArticleRepository $articleRepository): Response
-    {
+    public function index(
+        Request $request,
+        ArticleRepository $articleRepository,
+        UserRepository $userRepository
+    ): Response {
+        $title    = $request->query->get('title', null);
+        $authorId = $request->query->get('author', null);
+        $author   = $authorId ? $userRepository->find($authorId) : null;
+
+        $articles = $articleRepository->findByFilters($title, $author);
+
+        // ← Ici, on remplace la récupération de tous les users
+        //     et le filtrage par ROLE_USER par un appel direct :
+        $authors = $userRepository->findAuthors();
+
         return $this->render('article/index.html.twig', [
-            'articles' => $articleRepository->findAll(),
+            'articles'      => $articles,
+            'authors'       => $authors,
+            'search_title'  => $title,
+            'search_author' => $authorId,
         ]);
     }
 

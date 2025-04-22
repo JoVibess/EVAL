@@ -1,41 +1,45 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Article index{% endblock %}
+{% block title %}Liste des articles – Blog Voyages{% endblock %}
 
 {% block body %}
-    <h1>Article index</h1>
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Articles</h1>
+    {% if app.user %}
+      <a href="{{ path('app_article_new') }}" class="btn btn-success">+ Nouvel Article</a>
+    {% endif %}
+  </div>
 
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Titre</th>
-                <th>Contenu</th>
-                <th>CreatedAt</th>
-                <th>UpdatedAt</th>
-                <th>actions</th>
-            </tr>
-        </thead>
-        <tbody>
-        {% for article in articles %}
-            <tr>
-                <td>{{ article.id }}</td>
-                <td>{{ article.titre }}</td>
-                <td>{{ article.contenu }}</td>
-                <td>{{ article.createdAt ? article.createdAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>{{ article.updatedAt ? article.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
-                <td>
-                    <a href="{{ path('app_article_show', {'id': article.id}) }}">show</a>
-                    <a href="{{ path('app_article_edit', {'id': article.id}) }}">edit</a>
-                </td>
-            </tr>
-        {% else %}
-            <tr>
-                <td colspan="6">no records found</td>
-            </tr>
-        {% endfor %}
-        </tbody>
-    </table>
+  {# Formulaire de filtre #}
+  {{ include('article/_filters.html.twig') }}
 
-    <a href="{{ path('app_article_new') }}">Create new</a>
+  <table class="table table-hover align-middle mt-4">
+    <thead class="table-light">
+      <tr>
+        <th>#</th>
+        <th>Titre</th>
+        <th>Auteur</th>
+        <th>Date</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for article in articles %}
+        <tr>
+          <td>{{ article.id }}</td>
+          <td>{{ article.titre }}</td>
+          <td>{{ article.auteur.email }}</td>
+          <td>{{ article.createdAt|date('d/m/Y') }}</td>
+          <td class="text-end">
+            <a href="{{ path('app_article_show', {id: article.id}) }}" class="btn btn-sm btn-outline-primary">Voir</a>
+            {% if app.user and (article.auteur == app.user or is_granted('ROLE_ADMIN')) %}
+              <a href="{{ path('app_article_edit', {id: article.id}) }}" class="btn btn-sm btn-outline-warning">Modifier</a>
+            {% endif %}
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="5" class="text-center py-4">Aucun article trouvé.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
 {% endblock %}
